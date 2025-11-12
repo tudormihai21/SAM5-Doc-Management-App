@@ -21,6 +21,8 @@ public class DocumentWorkflowServiceImpl implements DocumentWorkflowService {
     private final SoftwareReleaseRepository releaseRepository;
     private final DocumentTypeRepository documentTypeRepository;
 
+    // NOTĂ: Aici ar intra și un AuditService sau ComputationService dacă ar fi nevoie.
+
     public DocumentWorkflowServiceImpl(ValidationService validationService,
                                        DocumentRepository documentRepository,
                                        UserRepository userRepository,

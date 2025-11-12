@@ -1,4 +1,5 @@
 package com.example.docmanagement.Domain.Team;
+import com.example.docmanagement.Domain.User.User;
 import jakarta.persistence.*;
 import java.util.Set;
 // IMPORT CLASA
@@ -23,6 +24,17 @@ public class Team {
     @OneToMany(mappedBy = "ownerTeam")
     private Set<SoftwareProduct> ownedProducts;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "ManagerUserID")
+    private User manager;
+
+    public void setManager(User manager) {
+        this.manager = manager;
+    }
+
+    public User getManager() {
+        return manager;
+    }
 
     public Team() {
     }

@@ -6,7 +6,7 @@ import java.util.Set;
 import com.example.docmanagement.Domain.Document.Document;
 import com.example.docmanagement.Domain.Team.TeamMember;
 @Entity
-@Table(name = "User")
+@Table(name = "User_app")
 public class User {
 
     @Id
@@ -23,7 +23,11 @@ public class User {
     @Column(name = "Email")
     private String email;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @Column(name = "Password")
+    private String password;
+
+
+    @ManyToOne(fetch =  FetchType.EAGER)
     @JoinColumn(name = "RoleID", referencedColumnName = "RoleID")
     private Role role;
 
@@ -67,6 +71,14 @@ public class User {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getPassword() {
+        return password;
     }
 
     public Role getRole() {
