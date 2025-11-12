@@ -23,7 +23,6 @@ public class TeamMemberId implements Serializable {
         this.teamId = teamId;
     }
 
-    // Getters, Setters, equals() și hashCode() sunt esențiale
     public int getUserId() {
         return userId;
     }

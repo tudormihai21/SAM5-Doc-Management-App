@@ -1,6 +1,5 @@
 package com.example.docmanagement;
 
-// Importă toate Repozitoriile de care ai nevoie
 import com.example.docmanagement.Repositories.*;
 // Importă toate Entitățile de care ai nevoie
 import com.example.docmanagement.Domain.Document.*;
@@ -23,10 +22,9 @@ public class DocManagementApplication {
 
     public static void main(String[] args) {
         SpringApplication app = new SpringApplication(DocManagementApplication.class);
-        app.setWebApplicationType(WebApplicationType.SERVLET); // <-- 3. SPUNE-I SĂ FIE UN SERVER WEB
+        app.setWebApplicationType(WebApplicationType.SERVLET);
         app.run(args);
     }
-    // În DocManagementApplication.java
 
 
     @Bean
@@ -41,25 +39,24 @@ public class DocManagementApplication {
             PasswordEncoder passwordEncoder
     ) {
         return args -> {
-            if (userRepository.count() > 0) { // Verificăm userii, e corect
+            if (userRepository.count() > 0) {
                 return;
             }
 
-            // 1. Creăm Roluri (Varianta CORECTATĂ)
-            // Trebuie să re-asignăm variabila pentru a prinde ID-ul generat de BD
+
             Role adminRole = new Role();
             adminRole.setRoleName("ADMIN");
-            adminRole = roleRepository.save(adminRole); // <-- AICI E CORECȚIA
+            adminRole = roleRepository.save(adminRole);
 
             Role managerRole = new Role();
             managerRole.setRoleName("PROJECT_MANAGER");
-            managerRole = roleRepository.save(managerRole); // <-- AICI E CORECȚIA
+            managerRole = roleRepository.save(managerRole);
 
             Role memberRole = new Role();
             memberRole.setRoleName("TEAM_MEMBER");
-            memberRole = roleRepository.save(memberRole); // <-- AICI E CORECȚIA
+            memberRole = roleRepository.save(memberRole);
 
-            // 2. Creăm Utilizatori
+
             User adminUser = new User();
             adminUser.setFirstName("Admin");
             adminUser.setLastName("Site");
@@ -84,31 +81,27 @@ public class DocManagementApplication {
             devUser.setRole(memberRole);
             userRepository.save(devUser);
 
-            // 3. Creăm Echipă și Produs (Varianta CORECTATĂ)
             Team teamAlpha = new Team();
             teamAlpha.setTeamName("Echipa Alpha");
-            teamAlpha = teamRepository.save(teamAlpha); // <-- Re-asignare
+            teamAlpha = teamRepository.save(teamAlpha);
 
             SoftwareProduct product = new SoftwareProduct();
             product.setProductName("DocManagement V1");
             product.setOwnerTeam(teamAlpha);
-            product = productRepository.save(product); // <-- Re-asignare
+            product = productRepository.save(product);
 
-            // 4. Creăm un Release (Varianta CORECTATĂ)
             SoftwareRelease release = new SoftwareRelease();
             release.setVersionNumber("1.0.0-BETA");
             release.setReleaseDate(LocalDate.now());
             release.setProduct(product);
-            release = releaseRepository.save(release); // <-- Re-asignare
+            release = releaseRepository.save(release);
 
-            // 5. Creăm un Tip de Document (Varianta CORECTATĂ)
             DocumentType specType = new DocumentType();
             specType.setTypeName("Specificatii Tehnice");
-            specType = typeRepository.save(specType); // <-- Re-asignare
+            specType = typeRepository.save(specType);
 
-            // 6. Creăm un Document de test
             Document testDoc = new Document();
-            testDoc.setTitle("Specificații API Login");
+            testDoc.setTitle("Specificatii API Login");
             testDoc.setFilePath("/docs/api_login_v1.pdf");
             testDoc.setDocumentVersion("v1.0");
             testDoc.setUploadTimestamp(LocalDateTime.now());

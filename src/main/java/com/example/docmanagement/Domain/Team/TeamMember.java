@@ -10,20 +10,18 @@ public class TeamMember {
     private TeamMemberId id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("userId") // Leagă atributul 'userId' din TeamMemberId
+    @MapsId("userId")
     @JoinColumn(name = "UserID")
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("teamId") // Leagă atributul 'teamId' din TeamMemberId
+    @MapsId("teamId")
     @JoinColumn(name = "TeamID")
     private Team team;
 
-    // Constructori
     public TeamMember() {
     }
 
-    // Getters and Setters
     public TeamMemberId getId() {
         return id;
     }

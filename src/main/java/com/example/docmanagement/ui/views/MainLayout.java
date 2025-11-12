@@ -33,7 +33,6 @@ public class MainLayout extends AppLayout {
         H1 logo = new H1("DocManagement");
         logo.addClassNames("text-l", "m-m");
 
-        // Link-ul de Logout (va trebui să implementăm /logout)
         Button logoutButton = new Button("Logout", e -> {
             authContext.logout();
         });
@@ -48,16 +47,13 @@ public class MainLayout extends AppLayout {
     }
 
     private void createDrawer() {
-        // Link-uri de navigație
         RouterLink homeLink = new RouterLink("Documente", DocumentListView.class);
-        homeLink.addComponentAsFirst(VaadinIcon.FILE_TEXT.create()); // <-- CORECTAT
+        homeLink.addComponentAsFirst(VaadinIcon.FILE_TEXT.create());
 
         RouterLink projectLink = new RouterLink("Proiecte", ProjectDashboardView.class);
-        projectLink.addComponentAsFirst(VaadinIcon.RECORDS.create()); // <-- CORECTAT
+        projectLink.addComponentAsFirst(VaadinIcon.RECORDS.create());
 
-        // Creăm meniul de Admin
         VerticalLayout adminMenu = createAdminMenu();
-        // Creăm meniul de Manager
         VerticalLayout managerMenu = createManagerMenu();
 
         addToDrawer(new VerticalLayout(
@@ -74,7 +70,6 @@ public class MainLayout extends AppLayout {
         adminLayout.setPadding(false);
         adminLayout.setSpacing(false);
 
-        // Adăugăm link-uri specifice adminului
         RouterLink userAdminLink = new RouterLink("Gestionează Useri", UserManagementView.class);
         userAdminLink.addComponentAsFirst(VaadinIcon.USERS.create());
 
@@ -83,7 +78,6 @@ public class MainLayout extends AppLayout {
 
         adminLayout.add(userAdminLink, teamAdminLink);
 
-        // Ascundem tot meniul dacă user-ul nu e Admin
         adminLayout.setVisible(securityService.isCurrentUserAdmin());
         return adminLayout;
     }
@@ -98,7 +92,6 @@ public class MainLayout extends AppLayout {
 
         managerLayout.add(teamManageLink);
 
-        // Ascundem meniul dacă user-ul nu e Manager
         managerLayout.setVisible(securityService.isCurrentUserProjectManager());
         return managerLayout;
     }

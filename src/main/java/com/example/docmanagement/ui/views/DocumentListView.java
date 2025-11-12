@@ -17,7 +17,7 @@ import com.example.docmanagement.ui.views.MainLayout;
  * Un ecran (view) care se va afișa la adresa URL "http://localhost:8080/"
  * Am schimbat în "" (gol) ca să fie pagina principală
  */
-@Route(value = "", layout = MainLayout.class) // "" înseamnă că aceasta va fi pagina principală a site-ului
+@Route(value = "", layout = MainLayout.class)
 @RolesAllowed({"ROLE_ADMIN", "ROLE_PROJECT_MANAGER", "ROLE_TEAM_MEMBER"})
 public class DocumentListView extends VerticalLayout {
 
@@ -25,18 +25,15 @@ public class DocumentListView extends VerticalLayout {
 
     private Grid<Document> grid = new Grid<>(Document.class);
 
-    // Constructorul unde Spring va injecta Repository-ul
     public DocumentListView(DocumentRepository documentRepository, SecurityService securityService) {
-        this.documentRepository = documentRepository; // Salvezi obiectul magic
+        this.documentRepository = documentRepository;
 
-        // Configurăm layout-ul
-        setSizeFull(); // Face pagina să ocupe tot spațiul
+        setSizeFull();
         configureGrid();
 
-        // Adăugăm tabelul (grid) pe ecran
+
         add(grid);
 
-        // Încărcăm datele
         updateList();
     }
 
@@ -51,29 +48,25 @@ public class DocumentListView extends VerticalLayout {
         grid.removeColumnByKey("documentType");
         grid.removeColumnByKey("uploader");
 
-        // Configurăm coloanele pe care le vrem, în ordinea dorită
+
         grid.setColumns("title", "documentVersion", "status", "uploadTimestamp");
 
-        // --- AICI SUNT CORECȚIILE ---
-        // Adăugăm verificări pentru a preveni erorile LAZY
 
         grid.addColumn(doc ->
-                doc.getUploader() != null ?  // Verifică dacă uploader-ul nu e null
+                doc.getUploader() != null ?
                         doc.getUploader().getFirstName() + " " + doc.getUploader().getLastName() : "N/A"
-        ).setHeader("Uploader"); // Numele coloanei
+        ).setHeader("Uploader");
 
         grid.addColumn(doc ->
-                doc.getSoftwareRelease() != null ? // Verifică dacă release-ul nu e null
+                doc.getSoftwareRelease() != null ?
                         doc.getSoftwareRelease().getVersionNumber() : "N/A"
         ).setHeader("Release");
 
         grid.addColumn(doc ->
-                doc.getDocumentType() != null ? // Verifică dacă tipul nu e null
+                doc.getDocumentType() != null ?
                         doc.getDocumentType().getTypeName() : "N/A"
         ).setHeader("Type");
-        // --- SFÂRȘITUL CORECȚIILOR ---
 
-        // Adăugăm coloana de acțiuni (pe care o voiam)
         grid.addComponentColumn(document -> {
             if (document.getStatus() == DocumentStatus.PENDING_REVIEW) {
                 boolean isManager = SecurityService.isCurrentUserProjectManager();
@@ -95,8 +88,7 @@ public class DocumentListView extends VerticalLayout {
     }
 
     private void approveDocument(Document document) {
-        // Aici ai apela un serviciu dedicat (ex: DocumentApprovalService)
-        // Dar pentru simplitate, putem schimba statusul direct:
+
         document.setStatus(DocumentStatus.APPROVED);
         documentRepository.save(document);
     }

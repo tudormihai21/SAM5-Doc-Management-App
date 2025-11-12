@@ -6,5 +6,4 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface SoftwareProductRepository extends JpaRepository<SoftwareProduct, Integer> {
-    // Spring Data JPA va genera automat totul
 }

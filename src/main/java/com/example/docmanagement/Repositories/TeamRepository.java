@@ -9,6 +9,5 @@ import java.util.Optional;
 
 @Repository
 public interface TeamRepository extends JpaRepository<Team, Integer> {
-    // Spring Data JPA va genera automat totul
     Optional<Team> findByManager(User manager);
 }

@@ -33,6 +33,5 @@ public class ValidationServiceImpl implements ValidationService {
         if (!documentTypeRepository.existsById(typeId)) {
             throw new EntityNotFoundException("DocumentType not found with ID: " + typeId);
         }
-        // Aici pot fi adăugate și alte validări (ex: permisiuni utilizator)
     }
 }

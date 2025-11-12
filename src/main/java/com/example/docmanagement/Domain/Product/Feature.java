@@ -24,11 +24,10 @@ public class Feature {
     @OneToMany(mappedBy = "feature")
     private Set<DocumentFeatureLink> documentLinks;
 
-    // Constructori
+
     public Feature() {
     }
 
-    // Getters and Setters
     public int getFeatureId() {
         return featureId;
     }

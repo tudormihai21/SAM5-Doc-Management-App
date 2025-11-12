@@ -18,11 +18,9 @@ public class DocumentType {
     @OneToMany(mappedBy = "documentType")
     private Set<Document> documents;
 
-    // Constructori
     public DocumentType() {
     }
 
-    // Getters and Setters
     public int getTypeId() {
         return typeId;
     }

@@ -37,15 +37,14 @@ public class SecurityConfig extends VaadinWebSecurity {
     protected void configure(HttpSecurity http) throws Exception {
         super.configure(http);
 
-        // CONFIGURARE CRUCIALĂ - setează AuthenticationProvider-ul
         http.authenticationProvider(authenticationProvider());
 
         setLoginView(http, "/login");
 
         http.logout(logout -> logout
-                .logoutSuccessUrl("/login?logout") // Redirectează aici după succes
-                .invalidateHttpSession(true)      // Asigură invalidarea sesiunii
-                .deleteCookies("JSESSIONID")    // Șterge cookie-ul de sesiune
+                .logoutSuccessUrl("/login?logout") //Redirect
+                .invalidateHttpSession(true)
+                .deleteCookies("JSESSIONID")    //Remove cookie
                 .permitAll());
     }
 }

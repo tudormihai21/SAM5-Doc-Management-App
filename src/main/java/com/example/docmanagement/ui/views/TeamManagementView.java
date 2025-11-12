@@ -45,7 +45,7 @@ public class TeamManagementView extends VerticalLayout {
         this.teamMemberRepository = teamMemberRepository;
         this.securityService = securityService;
 
-        // 1. Găsim echipa managerului logat
+
         Optional<User> currentUser = securityService.getAuthenticatedUser();
         if (currentUser.isEmpty()) {
             add(new H2("Eroare: Nu am putut identifica managerul."));
@@ -58,11 +58,9 @@ public class TeamManagementView extends VerticalLayout {
         }
         this.currentManagerTeam = team.get();
 
-        // 2. Configurăm view-ul
         setSizeFull();
         add(new H2("Gestionează Echipa: " + currentManagerTeam.getTeamName()));
 
-        // 3. Creăm layout-ul
         configureGrids();
         SplitLayout splitLayout = new SplitLayout(
                 createGridWrapper("Membri Disponibili", availableMembersGrid, removeButton),
@@ -71,11 +69,9 @@ public class TeamManagementView extends VerticalLayout {
         splitLayout.setSizeFull();
         add(splitLayout);
 
-        // 4. Configurăm butoanele
         addButton.addClickListener(e -> addSelectedMember());
         removeButton.addClickListener(e -> removeSelectedMember());
 
-        // 5. Încărcăm datele
         refreshGrids();
     }
 
@@ -85,7 +81,6 @@ public class TeamManagementView extends VerticalLayout {
     }
 
     private VerticalLayout createGridWrapper(String title, Grid<User> grid, Button button) {
-        // Punem butonul sub grid
         VerticalLayout wrapper = new VerticalLayout(new H2(title), grid, button);
         wrapper.setSizeFull();
         wrapper.setAlignItems(Alignment.CENTER);
@@ -93,46 +88,40 @@ public class TeamManagementView extends VerticalLayout {
     }
 
     private void refreshGrids() {
-        // Găsim userii care sunt membri în echipa curentă
         Set<User> membersInTeam = teamMemberRepository.findByTeam(currentManagerTeam)
                 .stream()
                 .map(TeamMember::getUser)
                 .collect(Collectors.toSet());
         teamMembersGrid.setItems(membersInTeam);
 
-        // Găsim userii disponibili (rol de membru ȘI nu sunt în nicio echipă)
         availableMembersGrid.setItems(userRepository.findAvailableTeamMembers());
     }
 
     private void addSelectedMember() {
-        // Luăm user-ul selectat din grid-ul din stânga
         User selectedUser = availableMembersGrid.asSingleSelect().getValue();
         if (selectedUser == null) {
             Notification.show("Selectează un membru disponibil.", 2000, Notification.Position.MIDDLE);
             return;
         }
 
-        // Creăm legătura
         TeamMember newMemberLink = new TeamMember();
         newMemberLink.setUser(selectedUser);
         newMemberLink.setTeam(currentManagerTeam);
         teamMemberRepository.save(newMemberLink);
 
-        refreshGrids(); // Reîmprospătăm
+        refreshGrids();
     }
 
     private void removeSelectedMember() {
-        // Luăm user-ul selectat din grid-ul din dreapta
         User selectedUser = teamMembersGrid.asSingleSelect().getValue();
         if (selectedUser == null) {
             Notification.show("Selectează un membru din echipa ta.", 2000, Notification.Position.MIDDLE);
             return;
         }
 
-        // Găsim și ștergem legătura
         Optional<TeamMember> memberLink = teamMemberRepository.findByUserAndTeam(selectedUser, currentManagerTeam);
         memberLink.ifPresent(teamMemberRepository::delete);
 
-        refreshGrids(); // Reîmprospătăm
+        refreshGrids();
     }
 }

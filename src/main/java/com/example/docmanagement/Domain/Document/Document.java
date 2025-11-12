@@ -46,11 +46,10 @@ public class Document {
     @OneToMany(mappedBy = "document")
     private Set<DocumentFeatureLink> featureLinks;
 
-    // Constructori
+
     public Document() {
     }
 
-    // Getters and Setters
     public int getDocumentId() {
         return documentId;
     }

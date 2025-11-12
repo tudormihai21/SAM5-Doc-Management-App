@@ -18,7 +18,7 @@ import com.example.docmanagement.ui.views.MainLayout; // Importăm layout-ul
 
 import java.util.List;
 
-@Route(value = "admin/teams", layout = MainLayout.class) // Folosim MainLayout
+@Route(value = "admin/teams", layout = MainLayout.class)
 @RolesAllowed("ROLE_ADMIN")
 public class TeamCreationView extends VerticalLayout {
 
@@ -36,12 +36,10 @@ public class TeamCreationView extends VerticalLayout {
         this.teamRepository = teamRepository;
         this.userRepository = userRepository;
 
-        // Căutăm toți userii care au rolul de manager
         List<User> potentialManagers = userRepository.findByRole_RoleName("PROJECT_MANAGER");
         manager.setItems(potentialManagers);
         manager.setItemLabelGenerator(user -> user.getFirstName() + " " + user.getLastName());
 
-        // Legăm câmpurile
         binder.forField(teamName).asRequired("Numele este obligatoriu").bind(Team::getTeamName, Team::setTeamName);
         binder.forField(manager).asRequired("Managerul este obligatoriu").bind(Team::getManager, Team::setManager);
 

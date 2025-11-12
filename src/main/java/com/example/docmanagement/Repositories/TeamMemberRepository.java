@@ -13,18 +13,16 @@ import java.util.Optional;
 @Repository
 public interface TeamMemberRepository extends JpaRepository<TeamMember, TeamMemberId> {
 
-    // --- METODELE NOI DE CARE ARE NEVOIE TeamManagementView ---
 
     /**
-     * Găsește toți membrii (legăturile) care aparțin de o anumită echipă.
+     * Membrii care aparțin de o anumita echipa.
      */
     List<TeamMember> findByTeam(Team team);
 
     /**
-     * Găsește legătura specifică dintre UN user și O echipă.
-     * Folosită pentru a șterge un membru.
+     * Gaseste legatura specifica dintre un user si o echipa.
+
      */
     Optional<TeamMember> findByUserAndTeam(User user, Team team);
 
-    // Metodele 'save' și 'delete' sunt incluse automat de JpaRepository
 }

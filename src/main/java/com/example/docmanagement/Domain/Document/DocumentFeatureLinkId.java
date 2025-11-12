@@ -14,7 +14,7 @@ public class DocumentFeatureLinkId implements Serializable {
     @Column(name = "FeatureID")
     private int featureId;
 
-    // Constructori
+
     public DocumentFeatureLinkId() {
     }
 
@@ -23,7 +23,7 @@ public class DocumentFeatureLinkId implements Serializable {
         this.featureId = featureId;
     }
 
-    // Getters, Setters, equals() și hashCode()
+
     public int getDocumentId() {
         return documentId;
     }

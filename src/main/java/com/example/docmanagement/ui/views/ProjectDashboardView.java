@@ -29,21 +29,16 @@ public class ProjectDashboardView extends VerticalLayout {
 
         setSizeFull();
 
-        // Configurăm dropdown-ul
         projectSelector.setItems(productRepository.findAll());
         projectSelector.setItemLabelGenerator(SoftwareProduct::getProductName);
         projectSelector.setWidth("50%");
 
-        // Configurăm tabelul
         configureGrid();
 
-        // Adăugăm logica de filtrare
         projectSelector.addValueChangeListener(event -> {
             if (event.getValue() != null) {
-                // Dacă un proiect e selectat, încărcăm documentele lui
                 updateGrid(event.getValue());
             } else {
-                // Dacă nimic nu e selectat, golim tabelul
                 documentGrid.setItems(Collections.emptyList());
             }
         });
@@ -52,7 +47,6 @@ public class ProjectDashboardView extends VerticalLayout {
     }
 
     private void configureGrid() {
-        // Folosim aceeași configurare ca în DocumentListView
         documentGrid.setSizeFull();
         documentGrid.removeColumnByKey("documentId");
         documentGrid.removeColumnByKey("filePath");
@@ -77,7 +71,6 @@ public class ProjectDashboardView extends VerticalLayout {
     }
 
     private void updateGrid(SoftwareProduct product) {
-        // Apelăm metoda NOUĂ din repository, care evită eroarea Lazy
         documentGrid.setItems(documentRepository.findByProductIdWithDetails(product.getProductId()));
     }
 }

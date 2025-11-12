@@ -20,11 +20,11 @@ public class DocumentFeatureLink {
     @JoinColumn(name = "FeatureID")
     private Feature feature;
 
-    // Constructori
+
     public DocumentFeatureLink() {
     }
 
-    // Getters and Setters
+
     public DocumentFeatureLinkId getId() {
         return id;
     }

@@ -12,9 +12,7 @@ import java.util.Optional;
 @Repository
 public interface DocumentRepository extends JpaRepository<Document, Integer> {
 
-    // Metoda pentru "Computation Service"
     long countBySoftwareRelease_ReleaseId(int releaseId);
-    // Găsește toate documentele ale căror Release aparține de un anume Product
     @Query("SELECT d FROM Document d WHERE d.softwareRelease.product.productId = :productId")
     List<Document> findByProductId(int productId);
 

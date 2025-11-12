@@ -23,11 +23,9 @@ public class SoftwareProduct {
     @OneToMany(mappedBy = "product")
     private Set<SoftwareRelease> releases;
 
-    // Constructori
     public SoftwareProduct() {
     }
 
-    // Getters and Setters
     public int getProductId() {
         return productId;
     }
