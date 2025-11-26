@@ -1,63 +1,97 @@
 package com.example.docmanagement;
 
-import com.example.docmanagement.Repositories.DocumentRepository;
-import com.example.docmanagement.Services.ComputationServices.ReleaseComputationServiceImpl;
+import com.example.docmanagement.Domain.Document.Document;
+import com.example.docmanagement.Domain.Document.DocumentStatus;
+import com.example.docmanagement.Domain.Document.DocumentType;
+import com.example.docmanagement.Domain.Product.SoftwareProduct;
+import com.example.docmanagement.Domain.Product.SoftwareRelease;
+import com.example.docmanagement.Domain.User.User;
+import com.example.docmanagement.Repositories.*;
+import com.example.docmanagement.Services.ComputationServices.ReleaseComputationService;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
+@Transactional
+
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:postgresql://localhost:5432/docmanagement",
+        "spring.datasource.username=postgres",
+        "spring.datasource.password=WSXpl0123",
+        "spring.datasource.driver-class-name=org.postgresql.Driver",
+        "spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect",
+        "spring.jpa.hibernate.ddl-auto=update",
+        "spring.jpa.show-sql=true"
+})
 class ReleaseComputationServiceImplTest {
 
+    @Autowired
+    private ReleaseComputationService releaseComputationService;
 
-    @Mock
-    private DocumentRepository documentRepository;
 
-
-    @InjectMocks
-    private ReleaseComputationServiceImpl computationService;
+    @Autowired private UserRepository userRepository;
+    @Autowired private SoftwareReleaseRepository releaseRepository;
+    @Autowired private SoftwareProductRepository productRepository;
+    @Autowired private DocumentTypeRepository documentTypeRepository;
+    @Autowired private DocumentRepository documentRepository;
 
     @Test
-    void testCountDocumentsForRelease_Success() {
+    void testCountDocumentsForRelease_RealDatabase() {
 
-        int testReleaseId = 5;
-        long expectedCount = 3L;
+        User u = new User();
+        u.setFirstName("Test");
+        u.setLastName("Counter");
+        u.setEmail("counter@test.com");
+        u.setPassword("pass");
+        u = userRepository.save(u);
+
+        SoftwareProduct prod = new SoftwareProduct();
+        prod.setProductName("App de Calcul");
+        prod = productRepository.save(prod);
+
+        SoftwareRelease release = new SoftwareRelease();
+        release.setVersionNumber("1.5.0");
+        release.setReleaseDate(LocalDate.now());
+        release.setProduct(prod);
+        release = releaseRepository.save(release);
 
 
-
-        when(documentRepository.countBySoftwareRelease_ReleaseId(testReleaseId))
-                .thenReturn(expectedCount);
-
-
-        long actualCount = computationService.countDocumentsForRelease(testReleaseId);
+        DocumentType type = new DocumentType();
+        type.setTypeName("Raport");
+        type = documentTypeRepository.save(type);
 
 
-        assertEquals(expectedCount, actualCount);
+        createAndSaveDoc("Doc 1", u, release, type);
+        createAndSaveDoc("Doc 2", u, release, type);
 
 
-        verify(documentRepository, times(1)).countBySoftwareRelease_ReleaseId(testReleaseId);
+        System.out.println("Documente salvate în DB pentru test: " + documentRepository.count());
+
+
+        long count = releaseComputationService.countDocumentsForRelease(release.getReleaseId());
+
+
+        assertEquals(2, count, "Serviciul ar trebui să găsească 2 documente în baza de date.");
     }
 
-    @Test
-    void testCountDocumentsForRelease_NoDocuments() {
 
-        int testReleaseId = 10;
-        long expectedCount = 0L;
-
-
-        when(documentRepository.countBySoftwareRelease_ReleaseId(testReleaseId))
-                .thenReturn(expectedCount);
-
-
-        long actualCount = computationService.countDocumentsForRelease(testReleaseId);
-
-
-        assertEquals(expectedCount, actualCount);
-        verify(documentRepository, times(1)).countBySoftwareRelease_ReleaseId(testReleaseId);
+    private void createAndSaveDoc(String title, User u, SoftwareRelease r, DocumentType t) {
+        Document d = new Document();
+        d.setTitle(title);
+        d.setUploader(u);
+        d.setSoftwareRelease(r);
+        d.setDocumentType(t);
+        d.setUploadTimestamp(LocalDateTime.now());
+        d.setStatus(DocumentStatus.DRAFT);
+        d.setFilePath("/tmp/" + title);
+        documentRepository.save(d);
     }
 }

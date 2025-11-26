@@ -1,111 +1,96 @@
 package com.example.docmanagement;
 
-import com.example.docmanagement.Domain.Document.DocumentStatus;
-import com.example.docmanagement.Services.ValidationServices.ValidationService;
-import com.example.docmanagement.Services.ValidationServices.ValidationServiceImpl;
 import com.example.docmanagement.Domain.Document.Document;
+import com.example.docmanagement.Domain.Document.DocumentStatus;
 import com.example.docmanagement.Domain.Document.DocumentType;
+import com.example.docmanagement.Domain.Product.SoftwareProduct;
 import com.example.docmanagement.Domain.Product.SoftwareRelease;
 import com.example.docmanagement.Domain.User.User;
-import com.example.docmanagement.Repositories.DocumentRepository;
-import com.example.docmanagement.Repositories.DocumentTypeRepository;
-import com.example.docmanagement.Repositories.SoftwareReleaseRepository;
-import com.example.docmanagement.Repositories.UserRepository;
-import com.example.docmanagement.Services.WorkFlowSer.DocumentWorkflowServiceImpl;
-import jakarta.persistence.EntityNotFoundException;
-import org.junit.jupiter.api.BeforeEach;
+import com.example.docmanagement.Repositories.*;
+import com.example.docmanagement.Services.WorkFlowSer.DocumentWorkflowService;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
-import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
+@Transactional
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:postgresql://localhost:5432/docmanagement",
+        "spring.datasource.username=postgres",
+        "spring.datasource.password=WSXpl0123",
+        "spring.datasource.driver-class-name=org.postgresql.Driver",
+        "spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect",
+        "spring.jpa.hibernate.ddl-auto=update",
+        "spring.jpa.show-sql=true"
+})
 class DocumentWorkflowServiceImplTest {
 
-    @Mock
-    private ValidationService validationService;
+    @Autowired
+    private DocumentWorkflowService documentWorkflowService;
 
-    @Mock
+    @Autowired
     private DocumentRepository documentRepository;
 
-    @Mock
-    private UserRepository userRepository;
-
-    @Mock
-    private SoftwareReleaseRepository releaseRepository;
-
-    @Mock
-    private DocumentTypeRepository documentTypeRepository;
-
-    @InjectMocks
-    private DocumentWorkflowServiceImpl documentWorkflowService;
-
-    private User mockUser;
-    private SoftwareRelease mockRelease;
-    private DocumentType mockDocType;
-    private Document mockDocument;
-
-    @BeforeEach
-    void setUp() {
-        mockUser = new User();
-        mockUser.setUserId(1);
-
-        mockRelease = new SoftwareRelease();
-        mockRelease.setReleaseId(1);
-
-        mockDocType = new DocumentType();
-        mockDocType.setTypeId(1);
-
-        mockDocument = new Document();
-        mockDocument.setDocumentId(100);
-        mockDocument.setTitle("Test Doc");
-        mockDocument.setUploader(mockUser);
-        mockDocument.setSoftwareRelease(mockRelease);
-        mockDocument.setDocumentType(mockDocType);
-        mockDocument.setUploadTimestamp(LocalDateTime.now());
-        mockDocument.setStatus(DocumentStatus.DRAFT);
-    }
+    @Autowired private UserRepository userRepository;
+    @Autowired private SoftwareReleaseRepository releaseRepository;
+    @Autowired private SoftwareProductRepository productRepository;
+    @Autowired private DocumentTypeRepository documentTypeRepository;
 
     @Test
-    void testUploadNewDocument_Success() {
-        DocumentStatus newStatus = DocumentStatus.DRAFT;
-        doNothing().when(validationService).validateDocumentUploadPrerequisites(1, 1, 1);
+    void testUploadNewDocument_SavesToDatabase() {
 
-        when(userRepository.getReferenceById(1)).thenReturn(mockUser);
-        when(releaseRepository.getReferenceById(1)).thenReturn(mockRelease);
-        when(documentTypeRepository.getReferenceById(1)).thenReturn(mockDocType);
+        User user = new User();
+        user.setFirstName("Ion");
+        user.setLastName("Popescu");
+        user.setEmail("ion@test.com");
+        user.setPassword("secret");
+        User savedUser = userRepository.save(user);
 
-        when(documentRepository.save(any(Document.class))).thenReturn(mockDocument);
+        SoftwareProduct product = new SoftwareProduct();
+        product.setProductName("Soft Bancar");
+        SoftwareProduct savedProduct = productRepository.save(product);
 
-        Document result = documentWorkflowService.uploadNewDocument(
-                "Test Doc", "/path/test.pdf", "v1.0", 1, 1, 1,newStatus
+        SoftwareRelease release = new SoftwareRelease();
+        release.setVersionNumber("2.0");
+        release.setReleaseDate(LocalDate.now());
+        release.setProduct(savedProduct);
+        SoftwareRelease savedRelease = releaseRepository.save(release);
+
+        DocumentType type = new DocumentType();
+        type.setTypeName("Specificatii Tehnice");
+        DocumentType savedType = documentTypeRepository.save(type);
+
+
+        String titluDocument = "Plan de Testare V1";
+
+        Document createdDoc = documentWorkflowService.uploadNewDocument(
+                titluDocument,
+                "/server/docs/plan.pdf",
+                "1.0",
+                savedUser.getUserId(),
+                savedRelease.getReleaseId(),
+                savedType.getTypeId(),
+                DocumentStatus.DRAFT
         );
 
-        assertNotNull(result);
-        assertEquals(100, result.getDocumentId());
-        assertEquals("Test Doc", result.getTitle());
 
-        verify(validationService, times(1)).validateDocumentUploadPrerequisites(1, 1, 1);
-        verify(documentRepository, times(1)).save(any(Document.class));
-    }
 
-    @Test
-    void testUploadNewDocument_ValidationFails() {
-        doThrow(new EntityNotFoundException("User not found"))
-                .when(validationService).validateDocumentUploadPrerequisites(99, 1, 1);
 
-        assertThrows(EntityNotFoundException.class, () -> {
-            documentWorkflowService.uploadNewDocument(
-                    "Test Doc", "/path/test.pdf", "v1.0", 99, 1, 1,DocumentStatus.DRAFT
-            );
-        });
+        assertNotNull(createdDoc.getDocumentId(), "ID-ul nu trebuie să fie null (trebuie generat de DB)");
 
-        verify(documentRepository, never()).save(any(Document.class));
+
+        Document fromDb = documentRepository.findById(createdDoc.getDocumentId()).orElse(null);
+
+        assertNotNull(fromDb, "Documentul nu a fost găsit în baza de date!");
+        assertEquals(titluDocument, fromDb.getTitle());
+        assertEquals(savedUser.getUserId(), fromDb.getUploader().getUserId());
+
+        System.out.println("Testul a confirmat: Documentul cu ID " + fromDb.getDocumentId() + " este în baza de date.");
     }
 }

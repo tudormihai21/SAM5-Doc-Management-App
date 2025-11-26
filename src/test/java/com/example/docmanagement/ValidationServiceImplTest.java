@@ -1,107 +1,96 @@
 package com.example.docmanagement;
 
+import com.example.docmanagement.Domain.Document.DocumentType;
+import com.example.docmanagement.Domain.Product.SoftwareProduct;
+import com.example.docmanagement.Domain.Product.SoftwareRelease;
+import com.example.docmanagement.Domain.User.User;
 import com.example.docmanagement.Repositories.DocumentTypeRepository;
+import com.example.docmanagement.Repositories.SoftwareProductRepository;
 import com.example.docmanagement.Repositories.SoftwareReleaseRepository;
 import com.example.docmanagement.Repositories.UserRepository;
-import com.example.docmanagement.Services.ValidationServices.ValidationServiceImpl;
+import com.example.docmanagement.Services.ValidationServices.ValidationService;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
+@Transactional
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:postgresql://localhost:5432/docmanagement",
+        "spring.datasource.username=postgres",
+        "spring.datasource.password=WSXpl0123",
+        "spring.datasource.driver-class-name=org.postgresql.Driver",
+        "spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect",
+        "spring.jpa.hibernate.ddl-auto=update",
+        "spring.jpa.show-sql=true"
+})
 class ValidationServiceImplTest {
 
+    @Autowired
+    private ValidationService validationService;
 
-    @Mock
-    private UserRepository userRepository;
-
-    @Mock
-    private SoftwareReleaseRepository releaseRepository;
-
-    @Mock
-    private DocumentTypeRepository documentTypeRepository;
-
-
-    @InjectMocks
-    private ValidationServiceImpl validationService;
+    @Autowired private UserRepository userRepository;
+    @Autowired private SoftwareReleaseRepository releaseRepository;
+    @Autowired private DocumentTypeRepository documentTypeRepository;
+    @Autowired private SoftwareProductRepository productRepository;
 
     @Test
-    void testValidate_Success() {
+    void testValidateDocumentUploadPrerequisites_Success() {
 
-        when(userRepository.existsById(1)).thenReturn(true);
-        when(releaseRepository.existsById(1)).thenReturn(true);
-        when(documentTypeRepository.existsById(1)).thenReturn(true);
+        User user = new User();
+        user.setFirstName("test_valid_user");
+        user.setLastName("test_valid_user");
+        user.setEmail("test@example.com");
+        user.setPassword("pass123");
+
+        User savedUser = userRepository.save(user);
 
 
-        assertDoesNotThrow(() -> {
-            validationService.validateDocumentUploadPrerequisites(1, 1, 1);
-        });
+        SoftwareProduct product = new SoftwareProduct();
+        product.setProductName("Test Product");
+        SoftwareProduct savedProduct = productRepository.save(product);
 
 
-        verify(userRepository, times(1)).existsById(1);
-        verify(releaseRepository, times(1)).existsById(1);
-        verify(documentTypeRepository, times(1)).existsById(1);
+        SoftwareRelease release = new SoftwareRelease();
+        release.setVersionNumber("1.0.0");
+        release.setReleaseDate(LocalDate.now());
+        release.setProduct(savedProduct);
+        SoftwareRelease savedRelease = releaseRepository.save(release);
+
+        DocumentType type = new DocumentType();
+        type.setTypeName("Specifications");
+        DocumentType savedType = documentTypeRepository.save(type);
+
+        assertDoesNotThrow(() ->
+                validationService.validateDocumentUploadPrerequisites(
+                        savedUser.getUserId(),
+                        savedRelease.getReleaseId(),
+                        savedType.getTypeId()
+                )
+        );
     }
 
     @Test
-    void testValidate_UserNotFound() {
+    void testValidateDocumentUploadPrerequisites_UserNotFound() {
+        int nonExistentUserId = 99999;
 
-        when(userRepository.existsById(99)).thenReturn(false);
+        DocumentType type = new DocumentType();
+        type.setTypeName("TestType");
+        DocumentType savedType = documentTypeRepository.save(type);
 
-
-
-        Exception exception = assertThrows(EntityNotFoundException.class, () -> {
-            validationService.validateDocumentUploadPrerequisites(99, 1, 1);
-        });
-
-
-        assertEquals("User not found with ID: 99", exception.getMessage());
-
-
-        verify(releaseRepository, never()).existsById(anyInt());
-        verify(documentTypeRepository, never()).existsById(anyInt());
-    }
-
-    @Test
-    void testValidate_ReleaseNotFound() {
-
-        when(userRepository.existsById(1)).thenReturn(true); // Utilizatorul există
-        when(releaseRepository.existsById(99)).thenReturn(false); // Release-ul NU există
-
-
-        Exception exception = assertThrows(EntityNotFoundException.class, () -> {
-            validationService.validateDocumentUploadPrerequisites(1, 99, 1);
-        });
-
-        assertEquals("SoftwareRelease not found with ID: 99", exception.getMessage());
-
-
-        verify(userRepository, times(1)).existsById(1);
-        verify(documentTypeRepository, never()).existsById(anyInt());
-    }
-
-    @Test
-    void testValidate_DocumentTypeNotFound() {
-
-        when(userRepository.existsById(1)).thenReturn(true); // Utilizatorul există
-        when(releaseRepository.existsById(1)).thenReturn(true); // Release-ul există
-        when(documentTypeRepository.existsById(99)).thenReturn(false); // Tipul NU există
-
-
-        Exception exception = assertThrows(EntityNotFoundException.class, () -> {
-            validationService.validateDocumentUploadPrerequisites(1, 1, 99);
-        });
-
-        assertEquals("DocumentType not found with ID: 99", exception.getMessage());
-
-
-        verify(userRepository, times(1)).existsById(1);
-        verify(releaseRepository, times(1)).existsById(1);
+        assertThrows(EntityNotFoundException.class, () ->
+                validationService.validateDocumentUploadPrerequisites(
+                        nonExistentUserId,
+                        1,
+                        savedType.getTypeId()
+                )
+        );
     }
 }

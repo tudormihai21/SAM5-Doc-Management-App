@@ -62,7 +62,7 @@ public class DocManagementApplication {
             adminUser.setLastName("Site");
             adminUser.setEmail("admin@doc.com");
             adminUser.setPassword(passwordEncoder.encode("admin123"));
-            adminUser.setRole(adminRole); // Acum 'adminRole' are un ID
+            adminUser.setRole(adminRole);
             userRepository.save(adminUser);
 
             User managerUser = new User();
@@ -89,6 +89,7 @@ public class DocManagementApplication {
             product.setProductName("DocManagement V1");
             product.setOwnerTeam(teamAlpha);
             product = productRepository.save(product);
+
 
             SoftwareRelease release = new SoftwareRelease();
             release.setVersionNumber("1.0.0-BETA");

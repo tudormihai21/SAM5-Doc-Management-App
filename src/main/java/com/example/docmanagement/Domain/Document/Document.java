@@ -24,6 +24,8 @@ public class Document {
     @Column(name = "DocumentVersion")
     private String documentVersion;
 
+
+
     @Column(name = "UploadTimestamp")
     private LocalDateTime uploadTimestamp;
 
@@ -46,7 +48,8 @@ public class Document {
     @OneToMany(mappedBy = "document")
     private Set<DocumentFeatureLink> featureLinks;
 
-
+    @Embedded
+    private DocumentAuditInfo auditInfo;
     public Document() {
     }
 

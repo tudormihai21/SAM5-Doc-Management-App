@@ -15,7 +15,10 @@ public class DocumentType {
     @Column(name = "TypeName")
     private String typeName;
 
-    @OneToMany(mappedBy = "documentType")
+    @OneToMany(mappedBy = "documentType",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
     private Set<Document> documents;
 
     public DocumentType() {
