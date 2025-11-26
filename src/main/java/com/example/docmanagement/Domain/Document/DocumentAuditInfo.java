@@ -4,10 +4,6 @@ import jakarta.persistence.Embeddable;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-/**
- * Value Object representing audit information for documents.
- * This demonstrates the use of @Embeddable for value objects.
- */
 @Embeddable
 public class DocumentAuditInfo {
 

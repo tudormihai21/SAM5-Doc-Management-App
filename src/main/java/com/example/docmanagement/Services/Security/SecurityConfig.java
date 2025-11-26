@@ -1,5 +1,6 @@
 package com.example.docmanagement.Services.Security;
 
+import com.vaadin.flow.spring.security.VaadinWebSecurity;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -8,7 +9,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import com.vaadin.flow.spring.security.VaadinWebSecurity;
 
 @Configuration
 @EnableWebSecurity
@@ -35,16 +35,34 @@ public class SecurityConfig extends VaadinWebSecurity {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        super.configure(http);
-
+        //Configure Authentication Provider
         http.authenticationProvider(authenticationProvider());
 
-        setLoginView(http, "/login");
+        // ALLOW REST API BEFORE VAADIN LOCKS THE DOOR
+        // We define specific exceptions here. We do NOT add .anyRequest()
+        // because super.configure(http) will do that automatically later.
+        http.authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/**").permitAll()
+        );
 
+        // Disable CSRF for REST API endpoints
+        http.csrf(csrf -> csrf
+                .ignoringRequestMatchers("/api/**")
+        );
+
+        // Configure Custom Logout
         http.logout(logout -> logout
-                .logoutSuccessUrl("/login?logout") //Redirect
+                .logoutSuccessUrl("/login?logout")
                 .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID")    //Remove cookie
-                .permitAll());
+                .deleteCookies("JSESSIONID")
+                .permitAll()
+        );
+
+        // CALL SUPER LAST
+        // This applies Vaadin's security configuration and adds the "catch-all"
+        // rule (anyRequest().authenticated()) for the UI views.
+        super.configure(http);
+
+        setLoginView(http, "/login");
     }
 }

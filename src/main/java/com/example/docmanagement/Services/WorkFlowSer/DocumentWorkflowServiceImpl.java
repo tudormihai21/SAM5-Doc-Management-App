@@ -57,6 +57,7 @@ public class DocumentWorkflowServiceImpl implements DocumentWorkflowService {
         newDocument.setSoftwareRelease(release);
         newDocument.setDocumentType(docType);
 
+        newDocument.setStatus(status != null ? status : DocumentStatus.DRAFT);
 
         Document savedDocument = documentRepository.save(newDocument);
 

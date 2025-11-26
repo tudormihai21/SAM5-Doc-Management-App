@@ -13,14 +13,23 @@ import java.util.List;
 /**
  * REST Controller for Document operations (Sprint 4).
  * Provides RESTful API endpoints for document management.
+ *
+ * Sprint 4 Requirements:
+ * - @RestController annotation for RESTful service implementation
+ * - @RequestMapping for base URL mapping
+ * - Repository @Autowired for data access
+ * - Business Workflow Services @Autowired for operations
  */
 @RestController
 @RequestMapping("/api/documents")
-@CrossOrigin(origins = "*") // Configure appropriately for production
+@CrossOrigin(origins = "*")
 public class DocumentRestController {
 
     private final DocumentRepository documentRepository;
     private final DocumentWorkflowService documentWorkflowService;
+
+
+    //Constructor injection (recommended over @Autowired field injection)
 
     public DocumentRestController(DocumentRepository documentRepository,
                                   DocumentWorkflowService documentWorkflowService) {
@@ -28,22 +37,22 @@ public class DocumentRestController {
         this.documentWorkflowService = documentWorkflowService;
     }
 
-    /**
-     * GET /api/documents - Retrieve all documents
-     *
-     * @return List of all documents
-     */
+
     @GetMapping
     public ResponseEntity<List<Document>> getAllDocuments() {
-        List<Document> documents = documentRepository.findAllWithDetails();
-        return ResponseEntity.ok(documents);
+        try {
+            List<Document> documents = documentRepository.findAllWithDetails();
+            return ResponseEntity.ok(documents);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     /**
      * GET /api/documents/{id} - Retrieve a specific document
      *
      * @param id Document ID
-     * @return Document if found, 404 otherwise
+     * @return Document if found with HTTP 200 OK, 404 NOT FOUND otherwise
      */
     @GetMapping("/{id}")
     public ResponseEntity<Document> getDocumentById(@PathVariable int id) {
@@ -56,12 +65,16 @@ public class DocumentRestController {
      * GET /api/documents/product/{productId} - Get documents by product
      *
      * @param productId Product ID
-     * @return List of documents for the product
+     * @return List of documents for the product with HTTP 200 OK
      */
     @GetMapping("/product/{productId}")
     public ResponseEntity<List<Document>> getDocumentsByProduct(@PathVariable int productId) {
-        List<Document> documents = documentRepository.findByProductId(productId);
-        return ResponseEntity.ok(documents);
+        try {
+            List<Document> documents = documentRepository.findByProductId(productId);
+            return ResponseEntity.ok(documents);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     /**
@@ -72,21 +85,25 @@ public class DocumentRestController {
      */
     @GetMapping("/status/{status}")
     public ResponseEntity<List<Document>> getDocumentsByStatus(@PathVariable DocumentStatus status) {
-        // Assuming you have this method in repository
-        List<Document> documents = documentRepository.findAll().stream()
-                .filter(d -> d.getStatus() == status)
-                .toList();
-        return ResponseEntity.ok(documents);
+        try {
+            List<Document> documents = documentRepository.findAll().stream()
+                    .filter(d -> d.getStatus() == status)
+                    .toList();
+            return ResponseEntity.ok(documents);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     /**
      * POST /api/documents - Create a new document
+     * Uses Business Workflow Service (Sprint 4 requirement)
      *
-     * @param request Document creation request
-     * @return Created document with 201 status
+     * @param request Document creation request (DTO)
+     * @return Created document with HTTP 201 CREATED, 400 BAD REQUEST on error
      */
     @PostMapping
-    public ResponseEntity<Document> createDocument(@RequestBody DocumentCreateRequest request) {
+    public ResponseEntity<?> createDocument(@RequestBody DocumentCreateRequest request) {
         try {
             Document created = documentWorkflowService.uploadNewDocument(
                     request.title(),
@@ -99,7 +116,7 @@ public class DocumentRestController {
             );
             return ResponseEntity.status(HttpStatus.CREATED).body(created);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
         }
     }
 
@@ -107,12 +124,12 @@ public class DocumentRestController {
      * PUT /api/documents/{id} - Update an existing document
      *
      * @param id Document ID
-     * @param request Update request
-     * @return Updated document or 404
+     * @param request Update request (DTO)
+     * @return Updated document with HTTP 200 OK, 404 NOT FOUND if not exists
      */
     @PutMapping("/{id}")
-    public ResponseEntity<Document> updateDocument(@PathVariable int id,
-                                                   @RequestBody DocumentUpdateRequest request) {
+    public ResponseEntity<?> updateDocument(@PathVariable int id,
+                                            @RequestBody DocumentUpdateRequest request) {
         return documentRepository.findById(id)
                 .map(document -> {
                     if (request.title() != null) {
@@ -135,7 +152,7 @@ public class DocumentRestController {
      *
      * @param id Document ID
      * @param status New status
-     * @return Updated document or 404
+     * @return Updated document with HTTP 200 OK, 404 NOT FOUND if not exists
      */
     @PatchMapping("/{id}/status")
     public ResponseEntity<Document> updateDocumentStatus(@PathVariable int id,
@@ -153,7 +170,7 @@ public class DocumentRestController {
      * DELETE /api/documents/{id} - Delete a document
      *
      * @param id Document ID
-     * @return 204 No Content if successful, 404 if not found
+     * @return HTTP 204 NO CONTENT if successful, 404 NOT FOUND if not exists
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDocument(@PathVariable int id) {
@@ -169,26 +186,28 @@ public class DocumentRestController {
      *
      * @param title Title search term (optional)
      * @param status Status filter (optional)
-     * @return List of matching documents
+     * @return List of matching documents with HTTP 200 OK
      */
     @GetMapping("/search")
     public ResponseEntity<List<Document>> searchDocuments(
             @RequestParam(required = false) String title,
             @RequestParam(required = false) DocumentStatus status) {
-
-        List<Document> documents = documentRepository.findAll().stream()
-                .filter(d -> title == null ||
-                        d.getTitle().toLowerCase().contains(title.toLowerCase()))
-                .filter(d -> status == null || d.getStatus() == status)
-                .toList();
-
-        return ResponseEntity.ok(documents);
+        try {
+            List<Document> documents = documentRepository.findAll().stream()
+                    .filter(d -> title == null ||
+                            d.getTitle().toLowerCase().contains(title.toLowerCase()))
+                    .filter(d -> status == null || d.getStatus() == status)
+                    .toList();
+            return ResponseEntity.ok(documents);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     /**
      * GET /api/documents/count - Get total document count
      *
-     * @return Total count
+     * @return Total count with HTTP 200 OK
      */
     @GetMapping("/count")
     public ResponseEntity<Long> getDocumentCount() {
@@ -200,7 +219,7 @@ public class DocumentRestController {
      * GET /api/documents/release/{releaseId}/count - Count documents for release
      *
      * @param releaseId Release ID
-     * @return Document count for the release
+     * @return Document count for the release with HTTP 200 OK
      */
     @GetMapping("/release/{releaseId}/count")
     public ResponseEntity<Long> countDocumentsForRelease(@PathVariable int releaseId) {
@@ -210,23 +229,6 @@ public class DocumentRestController {
 }
 
 /**
- * DTO for creating documents
- */
-record DocumentCreateRequest(
-        String title,
-        String filePath,
-        String version,
-        int uploaderId,
-        int releaseId,
-        int typeId,
-        DocumentStatus status
-) {}
-
-/**
- * DTO for updating documents
- */
-record DocumentUpdateRequest(
-        String title,
-        String version,
-        DocumentStatus status
-) {}
+ DTO for error responses
+ **/
+record ErrorResponse(String message) {}

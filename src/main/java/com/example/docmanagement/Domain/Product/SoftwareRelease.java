@@ -1,4 +1,5 @@
 package com.example.docmanagement.Domain.Product;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.Set;
@@ -6,6 +7,7 @@ import java.util.Set;
 // Clasa de documente
 import com.example.docmanagement.Domain.Document.Document;
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Table(name = "SoftwareRelease")
 public class SoftwareRelease {
 

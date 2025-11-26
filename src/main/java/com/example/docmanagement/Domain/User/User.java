@@ -1,4 +1,5 @@
 package com.example.docmanagement.Domain.User;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.util.Set;
 // IMPORT CLASE
