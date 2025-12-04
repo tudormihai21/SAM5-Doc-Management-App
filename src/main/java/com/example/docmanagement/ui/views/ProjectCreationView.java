@@ -341,7 +341,7 @@ public class ProjectCreationView extends VerticalLayout {
     }
 
     private void refreshData() {
-        productGrid.setItems(productRepository.findAll());
+        productGrid.setItems(productRepository.findAllWithOwnerTeam());
         productComboBox.setItems(productRepository.findAll());
         ownerTeamComboBox.setItems(teamRepository.findAll());
     }

@@ -1,0 +1,20 @@
+Scop: Obtinerea rapoartelor in timp real
+Obiective:
+Pe termen scurt:
+-Implementarea unei solutii pentru gestionarea eficienta volumelor de date
+-Reducerea timpului de obtinere a rapoartelor
+
+Pe termen lung:
+-Acuratete crescuta in deciziile strategice adoptate de management
+
+
+=============
+
+Scop: Optimizarea proceselor CRM
+Obiective:
+Pe termen scurt:
+-Eficientizarea timpului de lucru (task-urilor) angajatilor
+-
+
+Pe termen lung:
+-Imbunatatirea relatiilor cu distribuitorii / clientii
