@@ -1,0 +1,3 @@
+- Dezvoltarea unei noi aplicatii de CRM, adaptata la cerintele de business actuale (problema : aplicatia actuala este depasita dpdv. software / architectural si dpdv. al cerintelor de business).
+
+- Dezvoltarea / implementarea unui nou instrument de BI, pentru furnizarea rapoartelor 'in timp real' si adaptarea acestora la necesitatile de business in continua schimbare, conform pietei / concurentei. ( problema : lipsa de situatii / raporte 'in timp real', lipsa de adaptare la dinamica obiectului de activitate - in momentul actual o noua cerinta de business este echivalenta cu peticirea actualului sistem, fara o structura clara, orientata spre scalabilitate.

@@ -1,15 +1,12 @@
 package com.example.docmanagement.ui.views;
 
 import com.example.docmanagement.Services.Security.SecurityService;
-import com.example.docmanagement.ui.views.DocumentListView;
-import com.example.docmanagement.ui.views.ProjectDashboardView;
-import com.example.docmanagement.ui.views.TeamCreationView;
-import com.example.docmanagement.ui.views.UserManagementView;
-import com.example.docmanagement.ui.views.TeamManagementView;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.Hr;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -17,6 +14,18 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 
+/**
+ * Sprint 5: Updated Main Layout with Full Navigation
+ * 
+ * Enhanced navigation drawer including:
+ * - Document list view
+ * - Document upload view
+ * - Project dashboard
+ * - Project creation (Admin/Manager)
+ * - Document status management (Admin/Manager)
+ * - Admin menus
+ * - Manager menus
+ */
 public class MainLayout extends AppLayout {
 
     private final SecurityService securityService;
@@ -47,52 +56,85 @@ public class MainLayout extends AppLayout {
     }
 
     private void createDrawer() {
-        RouterLink homeLink = new RouterLink("Documente", DocumentListView.class);
+        VerticalLayout drawerContent = new VerticalLayout();
+        drawerContent.setPadding(true);
+        drawerContent.setSpacing(false);
+
+        // === DOCUMENTS SECTION ===
+        Span docSection = new Span("Documents");
+        docSection.getStyle().set("font-weight", "bold");
+        docSection.getStyle().set("color", "var(--lumo-secondary-text-color)");
+        docSection.getStyle().set("font-size", "var(--lumo-font-size-s)");
+        drawerContent.add(docSection);
+
+        RouterLink homeLink = new RouterLink("All Documents", DocumentListView.class);
         homeLink.addComponentAsFirst(VaadinIcon.FILE_TEXT.create());
+        drawerContent.add(homeLink);
 
-        RouterLink projectLink = new RouterLink("Proiecte", ProjectDashboardView.class);
+        RouterLink uploadLink = new RouterLink("Upload Document", DocumentUploadView.class);
+        uploadLink.addComponentAsFirst(VaadinIcon.UPLOAD.create());
+        drawerContent.add(uploadLink);
+
+        drawerContent.add(new Hr());
+
+        // === PROJECTS SECTION ===
+        Span projectSection = new Span("Projects");
+        projectSection.getStyle().set("font-weight", "bold");
+        projectSection.getStyle().set("color", "var(--lumo-secondary-text-color)");
+        projectSection.getStyle().set("font-size", "var(--lumo-font-size-s)");
+        drawerContent.add(projectSection);
+
+        RouterLink projectLink = new RouterLink("Project Dashboard", ProjectDashboardView.class);
         projectLink.addComponentAsFirst(VaadinIcon.RECORDS.create());
+        drawerContent.add(projectLink);
 
-        VerticalLayout adminMenu = createAdminMenu();
-        VerticalLayout managerMenu = createManagerMenu();
+        // Project creation (Admin/Manager only)
+        if (securityService.isCurrentUserAdmin() || SecurityService.isCurrentUserProjectManager()) {
+            RouterLink createProjectLink = new RouterLink("Create Project", ProjectCreationView.class);
+            createProjectLink.addComponentAsFirst(VaadinIcon.PLUS_CIRCLE.create());
+            drawerContent.add(createProjectLink);
+        }
 
-        addToDrawer(new VerticalLayout(
-                homeLink,
-                projectLink,
-                adminMenu,
-                managerMenu
-        ));
-    }
+        drawerContent.add(new Hr());
 
-    private VerticalLayout createAdminMenu() {
+        // === MANAGEMENT SECTION (Admin/Manager) ===
+        if (securityService.isCurrentUserAdmin() || SecurityService.isCurrentUserProjectManager()) {
+            Span mgmtSection = new Span("Management");
+            mgmtSection.getStyle().set("font-weight", "bold");
+            mgmtSection.getStyle().set("color", "var(--lumo-secondary-text-color)");
+            mgmtSection.getStyle().set("font-size", "var(--lumo-font-size-s)");
+            drawerContent.add(mgmtSection);
 
-        VerticalLayout adminLayout = new VerticalLayout();
-        adminLayout.setPadding(false);
-        adminLayout.setSpacing(false);
+            RouterLink statusLink = new RouterLink("Document Status", DocumentStatusManagementView.class);
+            statusLink.addComponentAsFirst(VaadinIcon.CHECK_SQUARE.create());
+            drawerContent.add(statusLink);
 
-        RouterLink userAdminLink = new RouterLink("Gestionează Useri", UserManagementView.class);
-        userAdminLink.addComponentAsFirst(VaadinIcon.USERS.create());
+            if (SecurityService.isCurrentUserProjectManager()) {
+                RouterLink teamManageLink = new RouterLink("Manage Team", TeamManagementView.class);
+                teamManageLink.addComponentAsFirst(VaadinIcon.USER_CHECK.create());
+                drawerContent.add(teamManageLink);
+            }
 
-        RouterLink teamAdminLink = new RouterLink("Creează Echipe", TeamCreationView.class);
-        teamAdminLink.addComponentAsFirst(VaadinIcon.GROUP.create());
+            drawerContent.add(new Hr());
+        }
 
-        adminLayout.add(userAdminLink, teamAdminLink);
+        // === ADMIN SECTION ===
+        if (securityService.isCurrentUserAdmin()) {
+            Span adminSection = new Span("Administration");
+            adminSection.getStyle().set("font-weight", "bold");
+            adminSection.getStyle().set("color", "var(--lumo-secondary-text-color)");
+            adminSection.getStyle().set("font-size", "var(--lumo-font-size-s)");
+            drawerContent.add(adminSection);
 
-        adminLayout.setVisible(securityService.isCurrentUserAdmin());
-        return adminLayout;
-    }
+            RouterLink userAdminLink = new RouterLink("Manage Users", UserManagementView.class);
+            userAdminLink.addComponentAsFirst(VaadinIcon.USERS.create());
+            drawerContent.add(userAdminLink);
 
-    private VerticalLayout createManagerMenu() {
-        VerticalLayout managerLayout = new VerticalLayout();
-        managerLayout.setPadding(false);
-        managerLayout.setSpacing(false);
+            RouterLink teamAdminLink = new RouterLink("Create Teams", TeamCreationView.class);
+            teamAdminLink.addComponentAsFirst(VaadinIcon.GROUP.create());
+            drawerContent.add(teamAdminLink);
+        }
 
-        RouterLink teamManageLink = new RouterLink("Gestionează Echipa", TeamManagementView.class);
-        teamManageLink.addComponentAsFirst(VaadinIcon.USER_CHECK.create());
-
-        managerLayout.add(teamManageLink);
-
-        managerLayout.setVisible(securityService.isCurrentUserProjectManager());
-        return managerLayout;
+        addToDrawer(drawerContent);
     }
 }

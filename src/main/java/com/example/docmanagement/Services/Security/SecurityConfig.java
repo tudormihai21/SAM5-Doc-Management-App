@@ -1,5 +1,6 @@
 package com.example.docmanagement.Services.Security;
 
+import com.example.docmanagement.ui.views.LoginView;
 import com.vaadin.flow.spring.security.VaadinWebSecurity;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -63,6 +64,7 @@ public class SecurityConfig extends VaadinWebSecurity {
         // rule (anyRequest().authenticated()) for the UI views.
         super.configure(http);
 
-        setLoginView(http, "/login");
+        setLoginView(http, LoginView.class);  // Use class reference
+
     }
 }

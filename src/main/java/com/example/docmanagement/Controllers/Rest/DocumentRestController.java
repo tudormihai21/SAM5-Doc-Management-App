@@ -10,16 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * REST Controller for Document operations (Sprint 4).
- * Provides RESTful API endpoints for document management.
- *
- * Sprint 4 Requirements:
- * - @RestController annotation for RESTful service implementation
- * - @RequestMapping for base URL mapping
- * - Repository @Autowired for data access
- * - Business Workflow Services @Autowired for operations
- */
 @RestController
 @RequestMapping("/api/documents")
 @CrossOrigin(origins = "*")
