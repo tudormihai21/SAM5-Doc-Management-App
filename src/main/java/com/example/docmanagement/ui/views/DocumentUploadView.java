@@ -4,10 +4,12 @@ import com.example.docmanagement.Domain.Document.Document;
 import com.example.docmanagement.Domain.Document.DocumentStatus;
 import com.example.docmanagement.Domain.Document.DocumentType;
 import com.example.docmanagement.Domain.Product.SoftwareRelease;
+import com.example.docmanagement.Domain.Team.Team;
 import com.example.docmanagement.Domain.User.User;
 import com.example.docmanagement.Repositories.DocumentRepository;
 import com.example.docmanagement.Repositories.DocumentTypeRepository;
 import com.example.docmanagement.Repositories.SoftwareReleaseRepository;
+import com.example.docmanagement.Services.DocumentAccess.DocumentAccessService;
 import com.example.docmanagement.Services.FileStorage.ByteArrayMultipartFile;
 import com.example.docmanagement.Services.FileStorage.FileStorageService;
 import com.example.docmanagement.Services.Security.SecurityService;
@@ -33,17 +35,24 @@ import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
- * Sprint 5: Document Upload View
+ * Sprint 5: Document Upload View with Team-Based Filtering
  * 
- * Vaadin-based web interface for uploading documents.
  * Features:
  * - Drag & drop file upload
  * - Document metadata form
  * - Progress indication
  * - Validation and error handling
+ * 
+ * Access Control:
+ * - ADMIN: Can upload to any release
+ * - PROJECT_MANAGER: Can upload to any release
+ * - TEAM_MEMBER: Can only upload to releases of products owned by their team(s)
  */
 @Route(value = "upload", layout = MainLayout.class)
 @PageTitle("Upload Document | DocManagement")
@@ -55,6 +64,7 @@ public class DocumentUploadView extends VerticalLayout {
     private final SoftwareReleaseRepository releaseRepository;
     private final DocumentTypeRepository documentTypeRepository;
     private final SecurityService securityService;
+    private final DocumentAccessService documentAccessService;
 
     // Form fields
     private TextField titleField = new TextField("Document Title");
@@ -69,6 +79,7 @@ public class DocumentUploadView extends VerticalLayout {
     
     // Status display
     private Span uploadStatus = new Span();
+    private Span accessInfoLabel = new Span();
     private ProgressBar progressBar = new ProgressBar();
     private Button submitButton = new Button("Upload Document", VaadinIcon.UPLOAD.create());
 
@@ -82,13 +93,15 @@ public class DocumentUploadView extends VerticalLayout {
             DocumentRepository documentRepository,
             SoftwareReleaseRepository releaseRepository,
             DocumentTypeRepository documentTypeRepository,
-            SecurityService securityService) {
+            SecurityService securityService,
+            DocumentAccessService documentAccessService) {
         
         this.fileStorageService = fileStorageService;
         this.documentRepository = documentRepository;
         this.releaseRepository = releaseRepository;
         this.documentTypeRepository = documentTypeRepository;
         this.securityService = securityService;
+        this.documentAccessService = documentAccessService;
 
         setSizeFull();
         setPadding(true);
@@ -100,10 +113,52 @@ public class DocumentUploadView extends VerticalLayout {
         add(createSubmitSection());
     }
 
-    private H2 createHeader() {
-        H2 header = new H2("Upload New Document");
-        header.getStyle().set("margin-top", "0");
+    private VerticalLayout createHeader() {
+        VerticalLayout header = new VerticalLayout();
+        header.setPadding(false);
+        header.setSpacing(false);
+
+        H2 title = new H2("Upload New Document");
+        title.getStyle().set("margin-top", "0");
+
+        // Show access level info
+        updateAccessInfoLabel();
+        accessInfoLabel.getStyle().set("color", "var(--lumo-secondary-text-color)");
+        accessInfoLabel.getStyle().set("font-size", "var(--lumo-font-size-s)");
+
+        header.add(title, accessInfoLabel);
         return header;
+    }
+
+    private void updateAccessInfoLabel() {
+        Optional<User> currentUser = SecurityService.getAuthenticatedUser();
+        if (currentUser.isEmpty()) {
+            accessInfoLabel.setText("");
+            return;
+        }
+
+        User user = currentUser.get();
+        String roleName = user.getRole() != null ? user.getRole().getRoleName() : "";
+
+        if ("ADMIN".equals(roleName)) {
+            accessInfoLabel.setText("You can upload to any project (Admin access)");
+            accessInfoLabel.getElement().getThemeList().add("badge success");
+        } else if ("PROJECT_MANAGER".equals(roleName)) {
+            accessInfoLabel.setText("You can upload to any project (Manager access)");
+            accessInfoLabel.getElement().getThemeList().add("badge success");
+        } else if ("TEAM_MEMBER".equals(roleName)) {
+            Set<Team> userTeams = documentAccessService.getUserTeams(user);
+            if (userTeams.isEmpty()) {
+                accessInfoLabel.setText("⚠ You are not assigned to any team. Cannot upload documents.");
+                accessInfoLabel.getElement().getThemeList().add("badge error");
+            } else {
+                String teamNames = userTeams.stream()
+                        .map(Team::getTeamName)
+                        .collect(Collectors.joining(", "));
+                accessInfoLabel.setText("You can upload to projects owned by: " + teamNames);
+                accessInfoLabel.getElement().getThemeList().add("badge");
+            }
+        }
     }
 
     private VerticalLayout createUploadSection() {
@@ -206,13 +261,8 @@ public class DocumentUploadView extends VerticalLayout {
         versionField.setValue("1.0");
         versionField.setPlaceholder("e.g., 1.0, 2.1");
 
-        // Release combo box
-        releaseComboBox.setItems(releaseRepository.findAllWithProduct());
-        releaseComboBox.setItemLabelGenerator(release -> 
-                release.getVersionNumber() + " (" + 
-                (release.getProduct() != null ? release.getProduct().getProductName() : "N/A") + ")");
-        releaseComboBox.setRequired(true);
-        releaseComboBox.setPlaceholder("Select release");
+        // Release combo box - filtered by accessible products
+        configureReleaseComboBox();
 
         // Type combo box
         typeComboBox.setItems(documentTypeRepository.findAll());
@@ -236,6 +286,54 @@ public class DocumentUploadView extends VerticalLayout {
         form.setColspan(titleField, 2);
 
         return form;
+    }
+
+    private void configureReleaseComboBox() {
+        // Get accessible releases based on user's team membership
+        List<SoftwareRelease> accessibleReleases = getAccessibleReleases();
+        
+        releaseComboBox.setItems(accessibleReleases);
+        releaseComboBox.setItemLabelGenerator(release -> 
+                release.getVersionNumber() + " (" + 
+                (release.getProduct() != null ? release.getProduct().getProductName() : "N/A") + ")");
+        releaseComboBox.setRequired(true);
+        releaseComboBox.setPlaceholder("Select release");
+
+        if (accessibleReleases.isEmpty()) {
+            releaseComboBox.setEnabled(false);
+            releaseComboBox.setPlaceholder("No releases available for your team(s)");
+        }
+    }
+
+    private List<SoftwareRelease> getAccessibleReleases() {
+        Optional<User> currentUser = SecurityService.getAuthenticatedUser();
+        if (currentUser.isEmpty()) {
+            return List.of();
+        }
+
+        User user = currentUser.get();
+        String roleName = user.getRole() != null ? user.getRole().getRoleName() : "";
+
+        // Admins and Project Managers can access all releases
+        if ("ADMIN".equals(roleName) || "PROJECT_MANAGER".equals(roleName)) {
+            return releaseRepository.findAllWithProduct();
+        }
+
+        // Team Members can only access releases of products owned by their teams
+        if ("TEAM_MEMBER".equals(roleName)) {
+            Set<Team> userTeams = documentAccessService.getUserTeams(user);
+            if (userTeams.isEmpty()) {
+                return List.of();
+            }
+
+            return releaseRepository.findAllWithProduct().stream()
+                    .filter(release -> release.getProduct() != null 
+                            && release.getProduct().getOwnerTeam() != null
+                            && userTeams.contains(release.getProduct().getOwnerTeam()))
+                    .collect(Collectors.toList());
+        }
+
+        return List.of();
     }
 
     private HorizontalLayout createSubmitSection() {
@@ -270,6 +368,13 @@ public class DocumentUploadView extends VerticalLayout {
             Optional<User> currentUser = SecurityService.getAuthenticatedUser();
             if (currentUser.isEmpty()) {
                 showError("Error: Could not identify current user");
+                return;
+            }
+
+            // Verify access to the selected release (defense in depth)
+            SoftwareRelease selectedRelease = releaseComboBox.getValue();
+            if (!canAccessRelease(currentUser.get(), selectedRelease)) {
+                showError("Error: You don't have permission to upload to this release");
                 return;
             }
 
@@ -319,6 +424,26 @@ public class DocumentUploadView extends VerticalLayout {
             progressBar.setVisible(false);
             submitButton.setEnabled(true);
         }
+    }
+
+    private boolean canAccessRelease(User user, SoftwareRelease release) {
+        String roleName = user.getRole() != null ? user.getRole().getRoleName() : "";
+
+        // Admins and Project Managers can access any release
+        if ("ADMIN".equals(roleName) || "PROJECT_MANAGER".equals(roleName)) {
+            return true;
+        }
+
+        // Team Members must be part of the team that owns the product
+        if ("TEAM_MEMBER".equals(roleName)) {
+            if (release.getProduct() == null || release.getProduct().getOwnerTeam() == null) {
+                return false;
+            }
+            Set<Team> userTeams = documentAccessService.getUserTeams(user);
+            return userTeams.contains(release.getProduct().getOwnerTeam());
+        }
+
+        return false;
     }
 
     private boolean validateForm() {

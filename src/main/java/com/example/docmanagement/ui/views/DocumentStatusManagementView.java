@@ -5,6 +5,7 @@ import com.example.docmanagement.Domain.Document.DocumentStatus;
 import com.example.docmanagement.Domain.Product.SoftwareProduct;
 import com.example.docmanagement.Repositories.DocumentRepository;
 import com.example.docmanagement.Repositories.SoftwareProductRepository;
+import com.example.docmanagement.Services.DocumentAccess.DocumentAccessService;
 import com.example.docmanagement.Services.Security.SecurityService;
 
 import com.vaadin.flow.component.button.Button;
@@ -32,11 +33,14 @@ import java.util.List;
 /**
  * Sprint 5: Document Status Management View
  * 
- * Allows Project Manager to:
+ * Allows Project Manager and Admin to:
  * - View all documents with their statuses
  * - Change document status (Approve, Reject, Archive, etc.)
  * - Filter documents by status
  * - Bulk status updates
+ * 
+ * Note: This view is only for ADMIN and PROJECT_MANAGER, 
+ * so no team filtering is needed - they have full access.
  */
 @Route(value = "documents/status", layout = MainLayout.class)
 @PageTitle("Document Status Management | DocManagement")
@@ -46,6 +50,7 @@ public class DocumentStatusManagementView extends VerticalLayout {
     private final DocumentRepository documentRepository;
     private final SoftwareProductRepository productRepository;
     private final SecurityService securityService;
+    private final DocumentAccessService documentAccessService;
 
     // Filter components
     private ComboBox<DocumentStatus> statusFilter = new ComboBox<>("Filter by Status");
@@ -62,11 +67,13 @@ public class DocumentStatusManagementView extends VerticalLayout {
     public DocumentStatusManagementView(
             DocumentRepository documentRepository,
             SoftwareProductRepository productRepository,
-            SecurityService securityService) {
+            SecurityService securityService,
+            DocumentAccessService documentAccessService) {
         
         this.documentRepository = documentRepository;
         this.productRepository = productRepository;
         this.securityService = securityService;
+        this.documentAccessService = documentAccessService;
 
         setSizeFull();
         setPadding(true);
@@ -92,8 +99,9 @@ public class DocumentStatusManagementView extends VerticalLayout {
         statusFilter.setClearButtonVisible(true);
         statusFilter.addValueChangeListener(e -> applyFilters());
 
-        // Product filter
-        productFilter.setItems(productRepository.findAll());
+        // Product filter - uses accessible products (all for Admin/Manager)
+        List<SoftwareProduct> accessibleProducts = documentAccessService.getAccessibleProducts();
+        productFilter.setItems(accessibleProducts);
         productFilter.setItemLabelGenerator(SoftwareProduct::getProductName);
         productFilter.setPlaceholder("All products");
         productFilter.setClearButtonVisible(true);
@@ -160,6 +168,14 @@ public class DocumentStatusManagementView extends VerticalLayout {
         documentGrid.addComponentColumn(this::createStatusBadge)
                 .setHeader("Current Status")
                 .setWidth("140px");
+
+        // Product column
+        documentGrid.addColumn(doc -> {
+            if (doc.getSoftwareRelease() != null && doc.getSoftwareRelease().getProduct() != null) {
+                return doc.getSoftwareRelease().getProduct().getProductName();
+            }
+            return "N/A";
+        }).setHeader("Product").setSortable(true);
 
         documentGrid.addColumn(doc -> 
                 doc.getUploader() != null 
@@ -399,7 +415,8 @@ public class DocumentStatusManagementView extends VerticalLayout {
     }
 
     private void applyFilters() {
-        List<Document> documents = documentRepository.findAllWithDetails();
+        // Get all accessible documents (all for Admin/Manager)
+        List<Document> documents = documentAccessService.getAccessibleDocuments();
         
         // Apply status filter
         if (statusFilter.getValue() != null) {

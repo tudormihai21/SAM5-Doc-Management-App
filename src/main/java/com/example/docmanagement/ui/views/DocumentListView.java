@@ -2,7 +2,10 @@ package com.example.docmanagement.ui.views;
 
 import com.example.docmanagement.Domain.Document.Document;
 import com.example.docmanagement.Domain.Document.DocumentStatus;
+import com.example.docmanagement.Domain.Team.Team;
+import com.example.docmanagement.Domain.User.User;
 import com.example.docmanagement.Repositories.DocumentRepository;
+import com.example.docmanagement.Services.DocumentAccess.DocumentAccessService;
 import com.example.docmanagement.Services.FileStorage.FileStorageService;
 import com.example.docmanagement.Services.Security.SecurityService;
 
@@ -12,20 +15,25 @@ import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.StreamResource;
 import jakarta.annotation.security.RolesAllowed;
 
 import java.io.InputStream;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
- * Sprint 5: Enhanced Document List View
+ * Sprint 5: Enhanced Document List View with Team-Based Filtering
  * 
  * Features:
  * - Document listing with details
@@ -33,28 +41,92 @@ import java.io.InputStream;
  * - Status badges
  * - Approve/Archive actions for managers
  * - Delete functionality
+ * 
+ * Access Control:
+ * - ADMIN: Sees ALL documents
+ * - PROJECT_MANAGER: Sees ALL documents
+ * - TEAM_MEMBER: Sees only documents from products owned by their team(s)
  */
 @Route(value = "", layout = MainLayout.class)
+@PageTitle("Documents | DocManagement")
 @RolesAllowed({"ROLE_ADMIN", "ROLE_PROJECT_MANAGER", "ROLE_TEAM_MEMBER"})
 public class DocumentListView extends VerticalLayout {
 
     private final DocumentRepository documentRepository;
     private final FileStorageService fileStorageService;
     private final SecurityService securityService;
+    private final DocumentAccessService documentAccessService;
 
     private Grid<Document> grid = new Grid<>(Document.class, false);
+    private Span accessInfoLabel = new Span();
 
     public DocumentListView(DocumentRepository documentRepository, 
                            FileStorageService fileStorageService,
-                           SecurityService securityService) {
+                           SecurityService securityService,
+                           DocumentAccessService documentAccessService) {
         this.documentRepository = documentRepository;
         this.fileStorageService = fileStorageService;
         this.securityService = securityService;
+        this.documentAccessService = documentAccessService;
 
         setSizeFull();
+        setPadding(true);
+        setSpacing(true);
+
+        // Add header with access info
+        add(createHeader());
+        
         configureGrid();
         add(grid);
         updateList();
+    }
+
+    private VerticalLayout createHeader() {
+        VerticalLayout header = new VerticalLayout();
+        header.setPadding(false);
+        header.setSpacing(false);
+
+        H2 title = new H2("Documents");
+        title.getStyle().set("margin", "0");
+
+        // Show access level info
+        updateAccessInfoLabel();
+        accessInfoLabel.getStyle().set("color", "var(--lumo-secondary-text-color)");
+        accessInfoLabel.getStyle().set("font-size", "var(--lumo-font-size-s)");
+
+        header.add(title, accessInfoLabel);
+        return header;
+    }
+
+    private void updateAccessInfoLabel() {
+        Optional<User> currentUser = SecurityService.getAuthenticatedUser();
+        if (currentUser.isEmpty()) {
+            accessInfoLabel.setText("");
+            return;
+        }
+
+        User user = currentUser.get();
+        String roleName = user.getRole() != null ? user.getRole().getRoleName() : "";
+
+        if ("ADMIN".equals(roleName)) {
+            accessInfoLabel.setText("Viewing: All documents (Admin access)");
+            accessInfoLabel.getElement().getThemeList().add("badge success");
+        } else if ("PROJECT_MANAGER".equals(roleName)) {
+            accessInfoLabel.setText("Viewing: All documents (Manager access)");
+            accessInfoLabel.getElement().getThemeList().add("badge success");
+        } else if ("TEAM_MEMBER".equals(roleName)) {
+            Set<Team> userTeams = documentAccessService.getUserTeams(user);
+            if (userTeams.isEmpty()) {
+                accessInfoLabel.setText("⚠ You are not assigned to any team. No documents visible.");
+                accessInfoLabel.getElement().getThemeList().add("badge error");
+            } else {
+                String teamNames = userTeams.stream()
+                        .map(Team::getTeamName)
+                        .collect(Collectors.joining(", "));
+                accessInfoLabel.setText("Viewing: Documents for team(s): " + teamNames);
+                accessInfoLabel.getElement().getThemeList().add("badge");
+            }
+        }
     }
 
     private void configureGrid() {
@@ -93,6 +165,14 @@ public class DocumentListView extends VerticalLayout {
                         : "N/A")
                 .setHeader("Uploader")
                 .setSortable(true);
+
+        // Product/Team column (helpful for team members to see which product)
+        grid.addColumn(doc -> {
+            if (doc.getSoftwareRelease() != null && doc.getSoftwareRelease().getProduct() != null) {
+                return doc.getSoftwareRelease().getProduct().getProductName();
+            }
+            return "N/A";
+        }).setHeader("Product").setSortable(true);
 
         // Release column
         grid.addColumn(doc ->
@@ -279,6 +359,7 @@ public class DocumentListView extends VerticalLayout {
     }
 
     private void updateList() {
-        grid.setItems(documentRepository.findAllWithDetails());
+        // Use the DocumentAccessService to get only accessible documents
+        grid.setItems(documentAccessService.getAccessibleDocuments());
     }
 }
